@@ -1,5 +1,9 @@
 # swift-ioc-container
 
+
+[![Actions Status](https://github.com/BrickmakersGmbH/swift-ioc-container/workflows/Swift/badge.svg)](https://github.com/BrickmakersGmbH/swift-ioc-container/actions)
+
+
 ```swift
 import swift_ioc_container
 
