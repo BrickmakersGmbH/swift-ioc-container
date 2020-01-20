@@ -1,77 +1,75 @@
-public class IoC {
-    fileprivate static var singletons:[String:AnyObject] = [String:AnyObject]()
-    fileprivate static var lazySingletons:[String:()->AnyObject] = [:]
-    fileprivate static var typeConstructs:[String:()->AnyObject] = [:]
+public final class IoC {
+    private static var singletons: [ObjectIdentifier: AnyObject] = [:]
+    private static var lazySingletons: [ObjectIdentifier: ()->AnyObject] = [:]
+    private static var typeConstructs: [ObjectIdentifier: ()->AnyObject] = [:]
     
-    public static func registerSingleton<T>(_ interface: T.Type, _ instance: AnyObject) throws{
-        if instance is T {
-            singletons[String(describing: interface)] = instance
-            lazySingletons.removeValue(forKey: String(describing: interface))
+    public static func registerSingleton<T>(_ interface: T.Type, _ instance: AnyObject) throws {
+        guard instance is T else {
+            throw IoCError.incompatibleTypes(interfaceType:interface, implementationType:type(of: instance))
         }
-        else {
-            throw IoCError.incompatibleTypes(interfaceType:String(describing: interface), implementationType:String(describing: type(of: instance)))
-        }
+        singletons[ObjectIdentifier(interface)] = instance
+        lazySingletons.removeValue(forKey: ObjectIdentifier(interface))
     }
     
-    public static func registerLazySingleton<T>(_ interface: T.Type, _ construct: @escaping ()->AnyObject){
-        lazySingletons[String(describing: interface)] = construct
+    public static func registerLazySingleton<T>(_ interface: T.Type, _ construct: @escaping ()->AnyObject) {
+        lazySingletons[ObjectIdentifier(interface)] = construct
     }
     
-    public static func registerType<T>(_ interface: T.Type, _ construct: @escaping ()->AnyObject){
-        typeConstructs[String(describing: interface)] = construct
+    public static func registerType<T>(_ interface: T.Type, _ construct: @escaping ()->AnyObject) {
+        typeConstructs[ObjectIdentifier(interface)] = construct
     }
     
-    public static func resolve<T>() throws -> T{
+    public static func resolve<T>() throws -> T {
         return try resolve(T.self)
     }
     
-    public static func resolve<T>(_ interface: T.Type) throws -> T{
-        let id = String(describing: interface)
+    public static func resolve<T>(_ interface: T.Type) throws -> T {
+        let id = ObjectIdentifier(interface)
         
-        if typeConstructs.contains(where: {(key:String, val:()->AnyObject) in key == id}){
-            let instance = typeConstructs[id]!()
-            if instance is T{
-                return instance as! T
+        if let typeConstruct = typeConstructs[id] {
+            let instance = typeConstruct()
+            guard let typedInstance = instance as? T else {
+                throw IoCError.incompatibleTypes(interfaceType: interface, implementationType: type(of: instance))
             }
             
-            throw IoCError.incompatibleTypes(interfaceType: id, implementationType: String(describing: type(of: instance)))
+            return typedInstance
         }
         
-        if lazySingletons.contains(where: {(key:String, val:()->AnyObject) in key == id}){
-            singletons[id] = lazySingletons.removeValue(forKey: id)!()
+        if let lazyValue = lazySingletons.removeValue(forKey: id) {
+            singletons[id] = lazyValue()
         }
-
-        if singletons.contains(where: {(key:String, val:AnyObject) in key == id}){
-            if singletons[id] is T {
-                return singletons[id]! as! T
+        
+        if let singleton = singletons[id] {
+            guard let typedSingleton = singleton as? T else {
+                throw IoCError.incompatibleTypes(interfaceType: interface, implementationType: type(of: singleton))
             }
             
-            throw IoCError.incompatibleTypes(interfaceType: id, implementationType: String(describing: type(of: singletons[id])))
+            return typedSingleton
         }
         
-        throw IoCError.nothingRegisteredForType(typeIdentifier: id)
+        throw IoCError.nothingRegisteredForType(typeIdentifier: interface)
     }
     
-    public static func resolveOrNil<T>(_ interface: T.Type) -> T?{
-        do{
+    public static func resolveOrNil<T>(_ interface: T.Type) -> T? {
+        do {
             return try resolve(interface)
-        }catch{
+        } catch {
             return nil
         }
     }
     
-    public static func resolveOrNil<T>() -> T?{
+    public static func resolveOrNil<T>() -> T? {
         return resolveOrNil(T.self)
     }
     
-    public static func unregisterAll(){
+    public static func unregisterAll() {
         singletons.removeAll()
         lazySingletons.removeAll()
         typeConstructs.removeAll()
     }
 }
 
-enum IoCError : Error{
-    case nothingRegisteredForType(typeIdentifier:String)
-    case incompatibleTypes(interfaceType:String, implementationType:String)
+enum IoCError: Error {
+    case nothingRegisteredForType(typeIdentifier: Any.Type)
+    case incompatibleTypes(interfaceType: Any.Type, implementationType: Any.Type)
 }
