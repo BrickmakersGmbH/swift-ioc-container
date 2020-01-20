@@ -1,4 +1,4 @@
-name: Swift
+name: Test on PullRequest
 
 on: [pull_request]
 
