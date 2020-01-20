@@ -1,0 +1,17 @@
+name: UnitTests_on_PR
+
+on:
+ pull_request:
+   branches: develop
+
+jobs:
+  build:
+
+    runs-on: macos-latest
+
+    steps:
+    - uses: actions/checkout@v1
+    - name: Build
+      run: swift build -v
+    - name: Run tests
+      run: swift test -v
