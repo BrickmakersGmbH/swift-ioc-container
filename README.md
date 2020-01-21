@@ -24,25 +24,17 @@ let myBot: SuperAwesomeBot = try! IoC.shared.resolve()
 myBot.saySomething()
 ```
 
+If you are using Swift 5.1 or newer, you could take advantage of the new property wrapper feature. It's already implemented in this library.
 
-## Swift 5.1
-If you are using Swift 5.1 or newer, you could take advantage of the new property wrapper feature.
+There is no more need to initialize the property manually in the initializer. Just declare the property with the expected protocol type.
 
 ```swift
-@propertyWrapper
-public struct Injected<Value> {
-    
-    public var wrappedValue: Value {
-        try! IoC.shared.resolve()
-    }
-    
-    public init() {}
-}
-
 @Injected private var myBot: SuperAwesomeBot
 ```
-There is no more need to initialize the property manually in the initializer. Just declare the property with the expected protocoltype.
 
+After declaring the property as `@Injected` you can access the previously registered object as you are used to.
+
+An example implementation can be found in Example.swift
 
 <!--
 [![CI Status](https://img.shields.io/travis/Jonas Österle/brickmakers-ioc.svg?style=flat)](https://travis-ci.org/Jonas Österle/brickmakers-ioc)
@@ -52,7 +44,7 @@ There is no more need to initialize the property manually in the initializer. Ju
 -->
 
 ## Requirements
-There are no further requirements beside Swift 5.0, just copy this little lib in your project and start.
+There are no further requirements beside Swift 5.1, just copy this little lib in your project and start.
 
 ## Installation
 
