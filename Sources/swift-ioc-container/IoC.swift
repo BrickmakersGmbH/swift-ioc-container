@@ -1,6 +1,6 @@
 public final class IoC {
     
-    static var shared = IoC()
+    public static let shared = IoC()
     
     private init() {}
     
