@@ -3,33 +3,46 @@
 ```swift
 import swift_ioc_container
 
-protocol ICanBeResolvedProtocol {
-     func sayHello()
+protocol SuperAwesomeBot {
+    func saySomething()
 }
-class CanBeResolved: ICanBeResolvedProtocol {
-    
-    static func register() {
-        IoC.registerLazySingleton(ICanBeResolvedProtocol.self){ CanBeResolved() }
-    }
-    
-    static func resolve() -> ICanBeResolvedProtocol {
-        return try! IoC.resolve()
-    }
 
-    
-    func sayHello() {
-        print ("hello :)")
+class StarWarsBot: SuperAwesomeBot {
+    func saySomething() {
+        print("The Force will be with you. Always.")
     }
 }
 ```
 And use it like this:
 
 ```swift
-CanBeResolved.register() // Only needed once.
+// only needed once
+IoC.shared.registerLazySingleton(SuperAwesomeBot.self, { StarWarsBot() }) 
 
-let resolvedInstance = CanBeResolved.resolve()
-resolvedInstance.sayHello()
+
+let myBot: SuperAwesomeBot = try! IoC.shared.resolve()
+myBot.saySomething()
 ```
+
+
+## Swift 5.1
+If you are using Swift 5.1 or newer, you could take advantage of the new property wrapper feature.
+
+```swift
+@propertyWrapper
+public struct Injected<Value> {
+    
+    public var wrappedValue: Value {
+        try! IoC.shared.resolve()
+    }
+    
+    public init() {}
+}
+
+@Injected private var myBot: SuperAwesomeBot
+```
+There is no more need to initialize the property manually in the initializer. Just declare the property with the expected protocoltype.
+
 
 <!--
 [![CI Status](https://img.shields.io/travis/Jonas Österle/brickmakers-ioc.svg?style=flat)](https://travis-ci.org/Jonas Österle/brickmakers-ioc)
@@ -39,6 +52,7 @@ resolvedInstance.sayHello()
 -->
 
 ## Requirements
+There are no further requirements beside Swift 5.0, just copy this little lib in your project and start.
 
 ## Installation
 
