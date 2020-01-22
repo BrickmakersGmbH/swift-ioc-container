@@ -1,3 +1,5 @@
+#if swift(>=5.1)  // check for swift 5.1 and later
+
 @propertyWrapper
 public struct Injected<Value> {
     
@@ -7,3 +9,5 @@ public struct Injected<Value> {
     
     public init() {}
 }
+
+#endif

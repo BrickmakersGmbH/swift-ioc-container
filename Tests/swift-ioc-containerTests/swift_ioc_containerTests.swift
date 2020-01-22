@@ -164,6 +164,32 @@ final class swift_ioc_containerTests: XCTestCase {
         XCTAssert(result is B)
     }
 
+
+    func test_inject_property_should_resolve_registered_type() throws {
+        #if swift(>=5.1)  // check for swift 5.1 and later
+        
+        class TestClassWhichUsesInjected {
+            @Injected var result : PIoCTestProtocol
+        }
+        
+        let testObject = IoCTestClass()
+
+        try IoC.shared.registerSingleton(PIoCTestProtocol.self, testObject)
+        
+        let classInstance = TestClassWhichUsesInjected()
+        let result = classInstance.result
+
+        XCTAssertNotNil(result)
+        XCTAssertTrue(result as AnyObject === testObject)
+        
+        #else
+       
+        XCTAssert(true, "Property wrapper is not supported in Swift < 5.1, so this test is always true!")
+        
+        #endif
+    }
+
+    
     func assertResolveError<T>(_ interface: T.Type) {
         assertError({ ()->Void in
                 _ = try IoC.shared.resolve(T.self)
@@ -205,6 +231,6 @@ final class swift_ioc_containerTests: XCTestCase {
         ("test_resolve_should_fail_when_registerLazySingleton_is_called_with_incompatible_types", test_resolve_should_fail_when_registerLazySingleton_is_called_with_incompatible_types),
         ("test_resolve_should_fail_when_registerType_is_called_with_incompatible_types", test_resolve_should_fail_when_registerType_is_called_with_incompatible_types),
         ("test_unregisterAll_removes_registrations", test_unregisterAll_removes_registrations),
-        ("test_constructType", test_constructType)
+        ("test_constructType", test_constructType),
     ]
 }
