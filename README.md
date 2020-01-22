@@ -56,7 +56,7 @@ swift_ioc_container is available through [CocoaPods](https://cocoapods.org). To 
 it, simply add the following line to your Podfile:
 
 ```ruby
-pod 'swift_ioc_container'
+pod 'Swift-IOC-Container'
 ```
 
 ## Authors
