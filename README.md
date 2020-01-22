@@ -1,7 +1,8 @@
 # swift-ioc-container
 
 
-[![Actions Status](https://github.com/BrickmakersGmbH/swift-ioc-container/workflows/Swift/badge.svg)](https://github.com/BrickmakersGmbH/swift-ioc-container/actions)
+[![Actions Status](https://github.com/BrickmakersGmbH/swift-ioc-container/workflows/UnitTests_on_Master/badge.svg)](https://github.com/BrickmakersGmbH/swift-ioc-container/actions)
+[![Actions Status](https://github.com/BrickmakersGmbH/swift-ioc-container/workflows/UnitTests_on_develop/badge.svg)](https://github.com/BrickmakersGmbH/swift-ioc-container/actions)
 
 
 ```swift
