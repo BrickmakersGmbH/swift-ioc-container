@@ -1,4 +1,5 @@
-import swift_ioc_container
+//No need for import, because we linked files from the source folder
+//import swift_ioc_container
 
 protocol SuperAwesomeBot {
     func saySomething()
