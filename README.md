@@ -1,35 +1,45 @@
 # swift-ioc-container
 
+
+[![Actions Status](https://github.com/BrickmakersGmbH/swift-ioc-container/workflows/UnitTests_on_Master/badge.svg)](https://github.com/BrickmakersGmbH/swift-ioc-container/actions)
+[![Actions Status](https://github.com/BrickmakersGmbH/swift-ioc-container/workflows/UnitTests_on_develop/badge.svg)](https://github.com/BrickmakersGmbH/swift-ioc-container/actions)
+
+
 ```swift
 import swift_ioc_container
 
-protocol ICanBeResolvedProtocol {
-     func sayHello()
+protocol SuperAwesomeBot {
+    func saySomething()
 }
-class CanBeResolved: ICanBeResolvedProtocol {
-    
-    static func register() {
-        IoC.registerLazySingleton(ICanBeResolvedProtocol.self){ CanBeResolved() }
-    }
-    
-    static func resolve() -> ICanBeResolvedProtocol {
-        return try! IoC.resolve()
-    }
 
-    
-    func sayHello() {
-        print ("hello :)")
+class StarWarsBot: SuperAwesomeBot {
+    func saySomething() {
+        print("The Force will be with you. Always.")
     }
 }
 ```
 And use it like this:
 
 ```swift
-CanBeResolved.register() // Only needed once.
+// only needed once
+IoC.shared.registerLazySingleton(SuperAwesomeBot.self, { StarWarsBot() }) 
 
-let resolvedInstance = CanBeResolved.resolve()
-resolvedInstance.sayHello()
+
+let myBot: SuperAwesomeBot = try! IoC.shared.resolve()
+myBot.saySomething()
 ```
+
+If you are using Swift 5.1 or newer, you could take advantage of the new property wrapper feature. It's already implemented in this library.
+
+There is no more need to initialize the property manually in the initializer. Just declare the property with the expected protocol type.
+
+```swift
+@Injected private var myBot: SuperAwesomeBot
+```
+
+After declaring the property as `@Injected` you can access the previously registered object as you are used to.
+
+An example implementation can be found in Example.swift
 
 <!--
 [![CI Status](https://img.shields.io/travis/Jonas Österle/brickmakers-ioc.svg?style=flat)](https://travis-ci.org/Jonas Österle/brickmakers-ioc)
@@ -39,6 +49,7 @@ resolvedInstance.sayHello()
 -->
 
 ## Requirements
+There are no further requirements beside Swift 5.1, just copy this little lib in your project and start.
 
 ## Installation
 
@@ -46,7 +57,7 @@ swift_ioc_container is available through [CocoaPods](https://cocoapods.org). To 
 it, simply add the following line to your Podfile:
 
 ```ruby
-pod 'swift_ioc_container'
+pod 'Swift-IOC-Container'
 ```
 
 ## Authors
