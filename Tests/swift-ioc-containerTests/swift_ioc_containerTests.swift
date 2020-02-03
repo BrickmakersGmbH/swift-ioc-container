@@ -6,6 +6,9 @@ protocol PIoCTestProtocol2 {}
 protocol PIoCTestProtocol3 {}
 protocol PIoCTestA {}
 protocol PIoCTestB {}
+protocol PIoCTestC {
+    var called: Int { get set }
+}
 
 final class swift_ioc_containerTests: XCTestCase {
     class IoCTestClass: PIoCTestProtocol {}
@@ -30,6 +33,14 @@ final class swift_ioc_containerTests: XCTestCase {
     class B: PIoCTestB {
         init(_ a: PIoCTestA = IoC.shared.resolveOrNil()!) {
             print("instantiated B")
+        }
+    }
+    
+    class C: PIoCTestC {
+        var called = 0
+        init() {
+            sleep(3)
+            called += 1
         }
     }
 
@@ -187,6 +198,45 @@ final class swift_ioc_containerTests: XCTestCase {
         XCTAssert(true, "Property wrapper is not supported in Swift < 5.1, so this test is always true!")
         
         #endif
+    }
+    
+    func test_resolving_same_lazy_object_two_times_should_not_be_nil_for_second_call() {
+        IoC.shared.registerLazySingleton(PIoCTestC.self, { ()->AnyObject in C()})
+        IoC.shared.registerLazySingleton(PIoCTestA.self, { ()->AnyObject in A()})
+        
+        let exp1 = XCTestExpectation(description: "testClass is resovled")
+        let exp2 = XCTestExpectation(description: "testClass2 is resovled")
+        DispatchQueue.main.async {
+            let first: PIoCTestC? = IoC.shared.resolveOrNil()
+            XCTAssertNotNil(first)
+            exp1.fulfill()
+        }
+        DispatchQueue.global(qos: .background).async {
+            let second: PIoCTestC? = IoC.shared.resolveOrNil()
+            XCTAssertNotNil(second)
+            exp2.fulfill()
+        }
+        wait(for: [exp1, exp2], timeout: 5)
+        let testClass: PIoCTestC = IoC.shared.resolveOrNil()!
+        XCTAssert(testClass.called == 1)
+    }
+    
+    func test_resolving_lazy_object_should_not_block_other_lazy_objects_from_init() {
+        IoC.shared.registerLazySingleton(PIoCTestC.self, { ()->AnyObject in C()})
+        IoC.shared.registerLazySingleton(PIoCTestA.self, { ()->AnyObject in A()})
+        
+        let exp1 = XCTestExpectation(description: "testClass is resovled")
+        let exp2 = XCTestExpectation(description: "otherClass is resovled")
+        DispatchQueue.main.async {
+            let first: PIoCTestC? = IoC.shared.resolveOrNil()
+            XCTAssertNotNil(first)
+            exp1.fulfill()
+        }
+        let otherClass: PIoCTestA? = IoC.shared.resolveOrNil()
+        exp2.fulfill()
+        XCTAssertNotNil(otherClass)
+        wait(for: [exp2], timeout: 1)
+        wait(for: [exp1], timeout: 5)
     }
 
     

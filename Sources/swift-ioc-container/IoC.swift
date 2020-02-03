@@ -1,3 +1,5 @@
+import Foundation
+
 public final class IoC {
     
     public static let shared = IoC()
@@ -7,6 +9,8 @@ public final class IoC {
     private var singletons: [ObjectIdentifier: AnyObject] = [:]
     private var lazySingletons: [ObjectIdentifier: ()->AnyObject] = [:]
     private var typeConstructs: [ObjectIdentifier: ()->AnyObject] = [:]
+    
+    private let lock = NSRecursiveLock()
     
     public func registerSingleton<T>(_ interface: T.Type, _ instance: AnyObject) throws {
         guard instance is T else {
@@ -40,8 +44,11 @@ public final class IoC {
             return typedInstance
         }
         
+        lock.lock()
         if let lazyValue = lazySingletons.removeValue(forKey: id) {
-            singletons[id] = lazyValue()
+            singletons[id] = computeLazySingleton(lazyConstructor: lazyValue)
+        } else {
+            lock.unlock()
         }
         
         if let singleton = singletons[id] {
@@ -71,6 +78,11 @@ public final class IoC {
         singletons.removeAll()
         lazySingletons.removeAll()
         typeConstructs.removeAll()
+    }
+    
+    private func computeLazySingleton<T>(lazyConstructor: () -> T) -> T {
+        defer { lock.unlock() }
+        return lazyConstructor()
     }
 }
 
