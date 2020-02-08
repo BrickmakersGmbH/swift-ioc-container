@@ -7,12 +7,8 @@ public final class IoC {
     private init() {}
     
     private var singletons: [ObjectIdentifier: AnyObject] = [:]
-    private var lazySingletons: [ObjectIdentifier: ()->AnyObject] = [:]
+    private var lazySingletons: [ObjectIdentifier: ThreadSafeBox<AnyObject>] = [:]
     private var typeConstructs: [ObjectIdentifier: ()->AnyObject] = [:]
-    
-    private var queues: [ObjectIdentifier: DispatchQueue] = [:]
-    private let generalQueue = DispatchQueue(label: "ThreadSafe.Concurrent.Queue", qos: .background, attributes: .concurrent)
-    
     public func registerSingleton<T>(_ interface: T.Type, _ instance: AnyObject) throws {
         guard instance is T else {
             throw IoCError.incompatibleTypes(interfaceType:interface, implementationType:type(of: instance))
@@ -22,7 +18,7 @@ public final class IoC {
     }
     
     public func registerLazySingleton<T>(_ interface: T.Type, _ construct: @escaping ()->AnyObject) {
-        lazySingletons[ObjectIdentifier(interface)] = construct
+        lazySingletons[ObjectIdentifier(interface)] = ThreadSafeBox(construct)
     }
     
     public func registerType<T>(_ interface: T.Type, _ construct: @escaping ()->AnyObject) {
@@ -36,21 +32,15 @@ public final class IoC {
     public func resolve<T>(_ interface: T.Type) throws -> T {
         let id = ObjectIdentifier(interface)
         
-        if let typeConstruct = typeConstructs[id] {
-            let instance = typeConstruct()
-            guard let typedInstance = instance as? T else {
-                throw IoCError.incompatibleTypes(interfaceType: interface, implementationType: type(of: instance))
-            }
-            
-            return typedInstance
-        }
-        let currentQueue: DispatchQueue = getDispatchQueue(id)
-        
-        if isTypeLazy(id: id) {
-            convertLazyToSingleton(withQueue: currentQueue, forId: id)
+        if let typeConstruct = try getTypeConstruct(id, forInterface: interface) {
+            return typeConstruct
         }
         
-        guard let singleton = try getSingleton(id, forInterface: interface, withQueue: currentQueue) else {
+        if let lazySingleton = try getLazySingleton(id, forInterface: interface) {
+            return lazySingleton
+        }
+        
+        guard let singleton = try getSingleton(id, forInterface: interface) else {
             throw IoCError.nothingRegisteredForType(typeIdentifier: interface)
         }
         
@@ -75,69 +65,36 @@ public final class IoC {
         typeConstructs.removeAll()
     }
     
-    private func isTypeLazy(id: ObjectIdentifier) -> Bool {
-        return generalQueue.sync {
-            return lazySingletons.contains(where: { $0.key == id })
+
+    private func getSingleton<T>(_ id: ObjectIdentifier, forInterface interface: T.Type) throws -> T? {
+        if let singleton = self.singletons[id] {
+            return try getTypedInstance(interface, instance: singleton)
         }
+        return nil
     }
     
-    private func getSingletonFromLazy(id: ObjectIdentifier) -> (() -> AnyObject)? {
-        return lazySingletons.removeValue(forKey: id)
-    }
-    
-    private func addSingletonToList(_ singleton: (()->AnyObject), forId id: ObjectIdentifier) {
-        singletons[id] = singleton()
-    }
-    
-    private func convertLazyToSingleton(withQueue queue: DispatchQueue, forId id: ObjectIdentifier) {
-        queue.sync(flags: .barrier) {
-            if self.isTypeLazy(id: id) {
-                if let singleton = self.getSingletonFromLazy(id: id) {
-                    self.addSingletonToList(singleton, forId: id)
-                }
-            }
+    private func getLazySingleton<T>(_ id: ObjectIdentifier, forInterface interface: T.Type) throws -> T? {
+        if let lazySingleton = self.lazySingletons[id] {
+            let lazySingletonObj = lazySingleton.read()
+            return try getTypedInstance(interface, instance: lazySingletonObj)
         }
+        return nil
     }
     
-    private func getSingleton<T>(_ id: ObjectIdentifier, forInterface interface: T.Type, withQueue queue: DispatchQueue) throws -> T? {
-        var ret: T? = nil
-        try queue.sync {
-            if let singleton = singletons[id] {
-                guard let typedSingleton = singleton as? T else {
-                    throw IoCError.incompatibleTypes(interfaceType: interface, implementationType: type(of: singleton))
-                }
-                
-                ret = typedSingleton
-            }
+    private func getTypeConstruct<T>(_ id: ObjectIdentifier, forInterface interface: T.Type) throws -> T? {
+        if let typeConstruct = self.typeConstructs[id] {
+            let instance = typeConstruct()
+            return try getTypedInstance(interface, instance: instance)
         }
-        return ret
+        return nil
     }
-    
-    private func getDispatchQueue(_ id: ObjectIdentifier) -> DispatchQueue {
-        if existsQueue(forId: id) {
-            return getQueue(forId: id)
-        } else {
-            return createQueue(forId: id)
+
+    private func getTypedInstance<T>(_ interface: T.Type, instance: AnyObject) throws -> T {
+        guard let typedInstance = instance as? T else {
+            throw IoCError.incompatibleTypes(interfaceType: interface, implementationType: type(of: instance))
         }
-    }
-    
-    private func existsQueue(forId id: ObjectIdentifier) -> Bool {
-        return generalQueue.sync {
-            return  queues.contains(where: { $0.key == id })
-        }
-    }
-    
-    private func getQueue(forId id: ObjectIdentifier) -> DispatchQueue {
-        return generalQueue.sync {
-            return queues.first(where: { $0.key == id})!.value
-        }
-    }
-    
-    private func createQueue(forId id: ObjectIdentifier) -> DispatchQueue {
-        generalQueue.sync(flags: .barrier) {
-            self.queues[id] = DispatchQueue(label: "\(id.debugDescription)")
-        }
-        return queues[id]!
+        
+        return typedInstance
     }
 }
 

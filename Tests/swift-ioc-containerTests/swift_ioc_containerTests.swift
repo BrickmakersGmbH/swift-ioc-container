@@ -174,31 +174,6 @@ final class swift_ioc_containerTests: XCTestCase {
         XCTAssertNotNil(result)
         XCTAssert(result is B)
     }
-
-
-    func test_inject_property_should_resolve_registered_type() throws {
-        #if swift(>=5.1)  // check for swift 5.1 and later
-        
-        class TestClassWhichUsesInjected {
-            @Injected var result : PIoCTestProtocol
-        }
-        
-        let testObject = IoCTestClass()
-
-        try IoC.shared.registerSingleton(PIoCTestProtocol.self, testObject)
-        
-        let classInstance = TestClassWhichUsesInjected()
-        let result = classInstance.result
-
-        XCTAssertNotNil(result)
-        XCTAssertTrue(result as AnyObject === testObject)
-        
-        #else
-       
-        XCTAssert(true, "Property wrapper is not supported in Swift < 5.1, so this test is always true!")
-        
-        #endif
-    }
     
     func test_resolving_same_lazy_object_two_times_should_not_be_nil_for_second_call() {
         IoC.shared.registerLazySingleton(PIoCTestC.self, { ()->AnyObject in C()})
@@ -215,7 +190,7 @@ final class swift_ioc_containerTests: XCTestCase {
             XCTAssertNotNil(second)
             exp2.fulfill()
         }
-        wait(for: [exp1, exp2], timeout: 5)
+        wait(for: [exp1, exp2], timeout: 7)
         let testClass: PIoCTestC = IoC.shared.resolveOrNil()!
         XCTAssert(testClass.called == 1)
     }
@@ -267,6 +242,30 @@ final class swift_ioc_containerTests: XCTestCase {
         wait(for: [exp2, exp3], timeout: 2)
         wait(for: [exp1], timeout: 5)
     }
+    
+    func test_inject_property_should_resolve_registered_type() throws {
+        #if swift(>=5.1)  // check for swift 5.1 and later
+        
+        class TestClassWhichUsesInjected {
+            @Injected var result : PIoCTestProtocol
+        }
+        
+        let testObject = IoCTestClass()
+
+        try IoC.shared.registerSingleton(PIoCTestProtocol.self, testObject)
+        
+        let classInstance = TestClassWhichUsesInjected()
+        let result = classInstance.result
+
+        XCTAssertNotNil(result)
+        XCTAssertTrue(result as AnyObject === testObject)
+        
+        #else
+       
+        XCTAssert(true, "Property wrapper is not supported in Swift < 5.1, so this test is always true!")
+        
+        #endif
+    }
 
     
     func assertResolveError<T>(_ interface: T.Type) {
@@ -311,5 +310,9 @@ final class swift_ioc_containerTests: XCTestCase {
         ("test_resolve_should_fail_when_registerType_is_called_with_incompatible_types", test_resolve_should_fail_when_registerType_is_called_with_incompatible_types),
         ("test_unregisterAll_removes_registrations", test_unregisterAll_removes_registrations),
         ("test_constructType", test_constructType),
+        ("test_resolving_same_lazy_object_two_times_from_same_thread_should_not_be_nil_for_second_call", test_resolving_same_lazy_object_two_times_from_same_thread_should_not_be_nil_for_second_call),
+        ("test_resolving_same_lazy_object_two_times_should_not_be_nil_for_second_call", test_resolving_same_lazy_object_two_times_should_not_be_nil_for_second_call),
+        ("test_resolving_lazy_object_should_not_block_other_lazy_objects_from_init", test_resolving_lazy_object_should_not_block_other_lazy_objects_from_init)
+        
     ]
 }
