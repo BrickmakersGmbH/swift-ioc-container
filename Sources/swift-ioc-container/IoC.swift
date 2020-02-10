@@ -1,3 +1,5 @@
+import Foundation
+
 public final class IoC {
     
     public static let shared = IoC()
@@ -5,9 +7,8 @@ public final class IoC {
     private init() {}
     
     private var singletons: [ObjectIdentifier: AnyObject] = [:]
-    private var lazySingletons: [ObjectIdentifier: ()->AnyObject] = [:]
+    private var lazySingletons: [ObjectIdentifier: ThreadSafeBox<AnyObject>] = [:]
     private var typeConstructs: [ObjectIdentifier: ()->AnyObject] = [:]
-    
     public func registerSingleton<T>(_ interface: T.Type, _ instance: AnyObject) throws {
         guard instance is T else {
             throw IoCError.incompatibleTypes(interfaceType:interface, implementationType:type(of: instance))
@@ -17,7 +18,7 @@ public final class IoC {
     }
     
     public func registerLazySingleton<T>(_ interface: T.Type, _ construct: @escaping ()->AnyObject) {
-        lazySingletons[ObjectIdentifier(interface)] = construct
+        lazySingletons[ObjectIdentifier(interface)] = ThreadSafeBox(construct)
     }
     
     public func registerType<T>(_ interface: T.Type, _ construct: @escaping ()->AnyObject) {
@@ -31,28 +32,19 @@ public final class IoC {
     public func resolve<T>(_ interface: T.Type) throws -> T {
         let id = ObjectIdentifier(interface)
         
-        if let typeConstruct = typeConstructs[id] {
-            let instance = typeConstruct()
-            guard let typedInstance = instance as? T else {
-                throw IoCError.incompatibleTypes(interfaceType: interface, implementationType: type(of: instance))
-            }
-            
-            return typedInstance
+        if let typeConstruct = try getTypeConstruct(id, forInterface: interface) {
+            return typeConstruct
         }
         
-        if let lazyValue = lazySingletons.removeValue(forKey: id) {
-            singletons[id] = lazyValue()
+        if let lazySingleton = try getLazySingleton(id, forInterface: interface) {
+            return lazySingleton
         }
         
-        if let singleton = singletons[id] {
-            guard let typedSingleton = singleton as? T else {
-                throw IoCError.incompatibleTypes(interfaceType: interface, implementationType: type(of: singleton))
-            }
-            
-            return typedSingleton
+        guard let singleton = try getSingleton(id, forInterface: interface) else {
+            throw IoCError.nothingRegisteredForType(typeIdentifier: interface)
         }
         
-        throw IoCError.nothingRegisteredForType(typeIdentifier: interface)
+        return singleton
     }
     
     public func resolveOrNil<T>(_ interface: T.Type) -> T? {
@@ -71,6 +63,38 @@ public final class IoC {
         singletons.removeAll()
         lazySingletons.removeAll()
         typeConstructs.removeAll()
+    }
+    
+
+    private func getSingleton<T>(_ id: ObjectIdentifier, forInterface interface: T.Type) throws -> T? {
+        if let singleton = self.singletons[id] {
+            return try getTypedInstance(interface, instance: singleton)
+        }
+        return nil
+    }
+    
+    private func getLazySingleton<T>(_ id: ObjectIdentifier, forInterface interface: T.Type) throws -> T? {
+        if let lazySingleton = self.lazySingletons[id] {
+            let lazySingletonObj = lazySingleton.read()
+            return try getTypedInstance(interface, instance: lazySingletonObj)
+        }
+        return nil
+    }
+    
+    private func getTypeConstruct<T>(_ id: ObjectIdentifier, forInterface interface: T.Type) throws -> T? {
+        if let typeConstruct = self.typeConstructs[id] {
+            let instance = typeConstruct()
+            return try getTypedInstance(interface, instance: instance)
+        }
+        return nil
+    }
+
+    private func getTypedInstance<T>(_ interface: T.Type, instance: AnyObject) throws -> T {
+        guard let typedInstance = instance as? T else {
+            throw IoCError.incompatibleTypes(interfaceType: interface, implementationType: type(of: instance))
+        }
+        
+        return typedInstance
     }
 }
 
