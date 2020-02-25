@@ -1,5 +1,5 @@
 import XCTest
-@testable import swift_ioc_container
+@testable import Swift_IoC_Container
 
 protocol PIoCTestProtocol {}
 protocol PIoCTestProtocol2 {}

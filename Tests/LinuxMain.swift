@@ -1,6 +1,6 @@
 import XCTest
 
-import swift_ioc_containerTests
+import Swift_IoC_ContainerTests
 
 var tests = [XCTestCaseEntry]()
 tests += swift_ioc_containerTests.allTests()

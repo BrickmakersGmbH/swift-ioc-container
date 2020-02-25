@@ -6,7 +6,7 @@
 
 
 ```swift
-import swift_ioc_container
+import Swift_IoC_Container
 
 protocol SuperAwesomeBot {
     func saySomething()
@@ -69,4 +69,4 @@ Philipp Manstein, philipp.manstein@brickmakers.de
 
 ## License
 
-swift_ioc_container is available under the MIT license. See the LICENSE file for more info.
+Swift_IoC_Container is available under the MIT license. See the LICENSE file for more info.
