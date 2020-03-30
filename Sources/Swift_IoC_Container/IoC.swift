@@ -67,6 +67,14 @@ public final class IoC {
         return resolveOrNil(T.self)
     }
     
+    public func resolveOrCrash<T>() -> T {
+        do {
+            return try resolve(T.self)
+        } catch {
+            fatalError("No registered instance found for interface: \(T.self)")
+        }
+    }
+    
     public func unregisterAll() {
         singletons.removeAll()
         lazySingletons.removeAll()
