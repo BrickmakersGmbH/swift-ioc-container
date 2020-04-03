@@ -67,6 +67,18 @@ public final class IoC {
         return resolveOrNil(T.self)
     }
     
+    /// Use this function only to see, if all your constructors are able to be initialized.
+    public func validateRegisteredConstructors(blackList: [ObjectIdentifier] = []) {
+
+        for lazy in lazySingletons {
+            if !blackList.contains(lazy.key) {
+                debugPrint(lazy.key)
+                _ = lazy.value()
+            }
+
+        }
+    }
+    
     public func unregisterAll() {
         singletons.removeAll()
         lazySingletons.removeAll()
@@ -77,4 +89,5 @@ public final class IoC {
 enum IoCError: Error {
     case nothingRegisteredForType(typeIdentifier: Any.Type)
     case incompatibleTypes(interfaceType: Any.Type, implementationType: Any.Type)
+    case canNotConstruct
 }

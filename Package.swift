@@ -12,6 +12,9 @@ let package = Package(
             targets: ["Swift_IoC_Container"]),
     ],
     dependencies: [
+        .package(url: "https://github.com/Quick/Quick.git", from: "2.2.0"),
+        .package(url: "https://github.com/Quick/Nimble.git", from: "8.0.0"),
+
         // Dependencies declare other packages that this package depends on.
         // .package(url: /* package url */, from: "1.0.0"),
     ],
@@ -23,6 +26,6 @@ let package = Package(
             dependencies: []),
         .testTarget(
             name: "Swift_IoC_ContainerTests",
-            dependencies: ["Swift_IoC_Container"]),
+            dependencies: ["Swift_IoC_Container", "Quick", "Nimble"]),
     ]
 )
