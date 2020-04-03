@@ -60,6 +60,36 @@ it, simply add the following line to your Podfile:
 pod 'Swift-IOC-Container'
 ```
 
+## Updating 
+
+
+1. First, do your changes :)
+2. Update PodSpec with a new version number
+3. Push and create a new tag with the same version number
+4. Execute the following line to update PodSpec on CocoaPods.org
+
+```
+pod trunk push Swift-IOC-Container.podspec
+```
+
+### Note:
+You need to be an owner of course.
+- Create your account like this:
+```
+pod trunk register myEmail@mail.de "Mein Name" --description="Name meines Rechners"
+```
+- An owner needs to add you as owner:
+```
+pod trunk add-owner Swift-IOC-Container email@email.de
+```
+
+### Troubleshooting:
+
+#### Error with .netRc:
+```
+chmod 0600 ~/.netrc
+```
+
 ## Authors
 
 Michael Scherbakow, michael.scherbakow@brickmakers.de  
