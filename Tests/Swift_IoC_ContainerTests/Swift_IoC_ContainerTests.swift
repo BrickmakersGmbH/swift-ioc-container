@@ -48,10 +48,10 @@ final class swift_ioc_containerTests: XCTestCase {
         )
     }
 
-    func test_resolve_Should_ResolveOrNil_Registered_Singleton() throws {
+    func test_resolve_Should_ResolveOrNil_Registered_Singleton() {
         let testObject = IoCTestClass()
 
-        try IoC.shared.registerSingleton(PIoCTestProtocol.self, testObject)
+        IoC.shared.registerSingleton(PIoCTestProtocol.self, testObject)
         let result = IoC.shared.resolveOrNil(PIoCTestProtocol.self)
 
         XCTAssertNotNil(result)
@@ -61,7 +61,7 @@ final class swift_ioc_containerTests: XCTestCase {
     func test_resolve_Should_Resolve_Registered_Singleton() throws {
         let testObject = IoCTestClass()
 
-        try IoC.shared.registerSingleton(PIoCTestProtocol.self, testObject)
+        IoC.shared.registerSingleton(PIoCTestProtocol.self, testObject)
         let result = try IoC.shared.resolve(PIoCTestProtocol.self)
 
         XCTAssertNotNil(result)
@@ -71,17 +71,17 @@ final class swift_ioc_containerTests: XCTestCase {
     func test_resolve_Should_Resolve_Registered_Singleton_implicitly() throws {
         let testObject = IoCTestClass()
 
-        try IoC.shared.registerSingleton(PIoCTestProtocol.self, testObject)
+        IoC.shared.registerSingleton(PIoCTestProtocol.self, testObject)
         let result:PIoCTestProtocol = try IoC.shared.resolve()
 
         XCTAssertNotNil(result)
         XCTAssertTrue(result as AnyObject === testObject)
     }
 
-    func test_resolve_Should_ResolveOrNil_Registered_Singleton_implicitly() throws {
+    func test_resolve_Should_ResolveOrNil_Registered_Singleton_implicitly() {
         let testObject = IoCTestClass()
 
-        try IoC.shared.registerSingleton(PIoCTestProtocol.self, testObject)
+        IoC.shared.registerSingleton(PIoCTestProtocol.self, testObject)
         let result:PIoCTestProtocol? = IoC.shared.resolveOrNil()
 
         XCTAssertNotNil(result)
@@ -91,15 +91,15 @@ final class swift_ioc_containerTests: XCTestCase {
     func test_registerSingleton_always_returns_the_same_instance() {
         let testSingleton = IoCTestClass()
 
-        try! IoC.shared.registerSingleton(PIoCTestProtocol.self, testSingleton)
+        IoC.shared.registerSingleton(PIoCTestProtocol.self, testSingleton)
 
         assertSingletonIsRegistered(testSingleton, type: PIoCTestProtocol.self)
     }
 
-    func test_registerLazySingleton_always_returns_the_same_instance() throws {
+    func test_registerLazySingleton_always_returns_the_same_instance() {
         let testSingleton = IoCTestClass()
 
-        IoC.shared.registerLazySingleton(PIoCTestProtocol.self, { () -> AnyObject in testSingleton })
+        IoC.shared.registerLazySingleton(PIoCTestProtocol.self, testSingleton)
 
         assertSingletonIsRegistered(testSingleton, type: PIoCTestProtocol.self)
     }
@@ -108,8 +108,8 @@ final class swift_ioc_containerTests: XCTestCase {
         let testSingletonOld = IoCTestClass()
         let testSingletonNew = IoCTestClass()
 
-        IoC.shared.registerLazySingleton(PIoCTestProtocol.self, { testSingletonOld })
-        try IoC.shared.registerSingleton(PIoCTestProtocol.self, testSingletonNew)
+        IoC.shared.registerLazySingleton(PIoCTestProtocol.self, testSingletonOld)
+        IoC.shared.registerSingleton(PIoCTestProtocol.self, testSingletonNew)
 
         assertSingletonIsRegistered(testSingletonNew, type: PIoCTestProtocol.self)
     }
@@ -123,29 +123,30 @@ final class swift_ioc_containerTests: XCTestCase {
         XCTAssertNotEqual(result1?.nr, result2?.nr)
     }
 
-    func test_registerSingleton_should_throw_error_when_registered_object_doesent_confirm_to_protocol() {
-        assertError({ ()->Void in
-                try IoC.shared.registerSingleton(PIoCTestProtocol.self, A())
-            },
-            predicate: { e -> Bool in e is IoCError })
+    func test_registerSingleton_should_crash_when_registered_object_doesent_confirm_to_protocol() {
+		let expectedError = IoCError.incompatibleTypes(interfaceType: PIoCTestProtocol.self, implementationType: A.self)
+		
+		expectFatalError(expectedMessage: String(describing: expectedError)) {
+			IoC.shared.registerSingleton(PIoCTestProtocol.self, A())
+		}
     }
 
-    func test_resolve_should_fail_when_registerLazySingleton_is_called_with_incompatible_types() throws {
-        IoC.shared.registerLazySingleton(PIoCTestProtocol.self, { () -> AnyObject in A() })
+    func test_resolve_should_fail_when_registerLazySingleton_is_called_with_incompatible_types() {
+        IoC.shared.registerLazySingleton(PIoCTestProtocol.self, A())
 
         assertResolveError(PIoCTestProtocol.self)
     }
 
-    func test_resolve_should_fail_when_registerType_is_called_with_incompatible_types() throws{
-        IoC.shared.registerType(PIoCTestProtocol.self, { () -> AnyObject in A() })
+    func test_resolve_should_fail_when_registerType_is_called_with_incompatible_types() {
+        IoC.shared.registerType(PIoCTestProtocol.self, A())
 
         assertResolveError(PIoCTestProtocol.self)
     }
 
     func test_unregisterAll_removes_registrations() throws {
-        IoC.shared.registerType(PIoCTestProtocol.self, { ()->AnyObject in IoCTestClass() })
-        try IoC.shared.registerSingleton(PIoCTestProtocol2.self, IoCTestClass2())
-        IoC.shared.registerLazySingleton(PIoCTestProtocol3.self, { ()->AnyObject in IoCTestClass3() })
+        IoC.shared.registerType(PIoCTestProtocol.self, IoCTestClass())
+        IoC.shared.registerSingleton(PIoCTestProtocol2.self, IoCTestClass2())
+        IoC.shared.registerLazySingleton(PIoCTestProtocol3.self, IoCTestClass())
 
         IoC.shared.unregisterAll()
 
@@ -155,8 +156,8 @@ final class swift_ioc_containerTests: XCTestCase {
     }
 
     func test_constructType() throws{
-        IoC.shared.registerLazySingleton(PIoCTestA.self, { ()->AnyObject in A() })
-        IoC.shared.registerLazySingleton(PIoCTestB.self, { ()->AnyObject in B() })
+        IoC.shared.registerLazySingleton(PIoCTestA.self, A())
+        IoC.shared.registerLazySingleton(PIoCTestB.self, B())
 
         let result = try IoC.shared.resolve(PIoCTestB.self)
 
@@ -165,7 +166,7 @@ final class swift_ioc_containerTests: XCTestCase {
     }
 
 
-    func test_inject_property_should_resolve_registered_type() throws {
+    func test_inject_property_should_resolve_registered_type() {
         #if swift(>=5.1)  // check for swift 5.1 and later
         
         class TestClassWhichUsesInjected {
@@ -174,7 +175,7 @@ final class swift_ioc_containerTests: XCTestCase {
         
         let testObject = IoCTestClass()
 
-        try IoC.shared.registerSingleton(PIoCTestProtocol.self, testObject)
+        IoC.shared.registerSingleton(PIoCTestProtocol.self, testObject)
         
         let classInstance = TestClassWhichUsesInjected()
         let result = classInstance.result
@@ -227,10 +228,32 @@ final class swift_ioc_containerTests: XCTestCase {
         ("test_registerLazySingleton_always_returns_the_same_instance", test_registerLazySingleton_always_returns_the_same_instance),
         ("test_registerSingleton_removes_old_lazy_registration", test_registerSingleton_removes_old_lazy_registration),
         ("test_registerType_causes_resolve_to_always_create_a_new_instance", test_registerType_causes_resolve_to_always_create_a_new_instance),
-        ("test_registerSingleton_should_throw_error_when_registered_object_doesent_confirm_to_protocol", test_registerSingleton_should_throw_error_when_registered_object_doesent_confirm_to_protocol),
+        ("test_registerSingleton_should_throw_error_when_registered_object_doesent_confirm_to_protocol", test_registerSingleton_should_crash_when_registered_object_doesent_confirm_to_protocol),
         ("test_resolve_should_fail_when_registerLazySingleton_is_called_with_incompatible_types", test_resolve_should_fail_when_registerLazySingleton_is_called_with_incompatible_types),
         ("test_resolve_should_fail_when_registerType_is_called_with_incompatible_types", test_resolve_should_fail_when_registerType_is_called_with_incompatible_types),
         ("test_unregisterAll_removes_registrations", test_unregisterAll_removes_registrations),
         ("test_constructType", test_constructType),
     ]
+}
+
+extension XCTestCase {
+	func expectFatalError(expectedMessage: String, testcase: @escaping () -> Void) {
+		let expectation = self.expectation(description: "expectingFatalError")
+		var assertionMessage: String? = nil
+		FatalErrorUtil.replaceFatalError { message, _, _ in
+			assertionMessage = message
+			expectation.fulfill()
+			self.unreachable()
+		}
+		DispatchQueue.global(qos: .userInitiated).async(execute: testcase)
+		waitForExpectations(timeout: 2) { _ in
+			XCTAssertEqual(assertionMessage, expectedMessage)
+			FatalErrorUtil.restoreFatalError()
+		}
+	}
+	private func unreachable() -> Never {
+		repeat {
+			RunLoop.current.run()
+		} while (true)
+	}
 }

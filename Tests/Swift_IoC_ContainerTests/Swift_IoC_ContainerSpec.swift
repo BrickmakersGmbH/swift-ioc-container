@@ -24,35 +24,29 @@ class IoCSpec: QuickSpec {
             }
             
             it("should not fail for valid constructors") {
-                try! IoC.shared.registerLazySingleton(PIoCTestProtocol.self) { IoCTestClass() }
-                expect { IoC.shared.validateRegisteredConstructors()
-                }.toNot(throwAssertion())
+                IoC.shared.registerLazySingleton(PIoCTestProtocol.self, IoCTestClass())
+                expect(IoC.shared.validateRegisteredConstructors()).toNot(throwAssertion())
                 
             }
             
             it("should throw for invalid constructors") {
-                
-                try! IoC.shared.registerLazySingleton(PIoCTestProtocol4.self) { LazyIoCTestClassWithError() }
-                
-                expect { IoC.shared.validateRegisteredConstructors()
-                }.to(throwAssertion())
+                IoC.shared.registerLazySingleton(PIoCTestProtocol4.self, LazyIoCTestClassWithError())
+                expect(IoC.shared.validateRegisteredConstructors()).to(throwAssertion())
                 
             }
             
             it("should not throw if protocol is blacklisted") {
                 class LazyIoCTestClassWithError: PIoCTestProtocol4 {
-                    
                     init(x: PIoCCanNotBeResolved = IoC.shared.resolveOrNil()!) {}
                 }
                 
-                try! IoC.shared.registerLazySingleton(PIoCTestProtocol4.self) { LazyIoCTestClassWithError() }
+                IoC.shared.registerLazySingleton(PIoCTestProtocol4.self, LazyIoCTestClassWithError())
                 
                 let blackList = [
                     ObjectIdentifier(PIoCTestProtocol4.self)
                 ]
                 
-                expect { IoC.shared.validateRegisteredConstructors(blackList: blackList)
-                }.toNot(throwAssertion())
+                expect(IoC.shared.validateRegisteredConstructors(blackList: blackList)).toNot(throwAssertion())
             }
             
         }

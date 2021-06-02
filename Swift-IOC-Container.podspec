@@ -16,7 +16,7 @@ Pod::Spec.new do |spec|
   #
 
   spec.name         = "Swift-IOC-Container"
-  spec.version      = "0.3.1"
+  spec.version      = "0.3.3"
   spec.summary      = "A pure Swift IoC Container."
   spec.swift_version = "5.0"
   
