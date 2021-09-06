@@ -4,32 +4,28 @@ public final class IoC {
     
     private init() {}
     
-    private var singletons: [ObjectIdentifier: AnyObject] = [:]
-    private var lazySingletons: [ObjectIdentifier: ()->AnyObject] = [:]
-    private var typeConstructs: [ObjectIdentifier: ()->AnyObject] = [:]
+    private var singletons: [ObjectIdentifier: Any] = [:]
+    private var lazySingletons: [ObjectIdentifier: ()->Any] = [:]
+    private var typeConstructs: [ObjectIdentifier: ()->Any] = [:]
     
-    public func registerSingleton<T>(_ interface: T.Type, _ instance: AnyObject) {
-        guard instance is T else {
-			let error = IoCError.incompatibleTypes(interfaceType:interface, implementationType:type(of: instance))
-			fatalError(String(describing: error))
-        }
+    public func registerSingleton<T>(_ interface: T.Type, _ instance: T) {
         singletons[ObjectIdentifier(interface)] = instance
         lazySingletons.removeValue(forKey: ObjectIdentifier(interface))
     }
     
-    public func registerLazySingleton<T>(_ interface: T.Type, _ construct: @escaping ()->AnyObject) {
+    public func registerLazySingleton<T>(_ interface: T.Type, _ construct: @escaping ()->T) {
         lazySingletons[ObjectIdentifier(interface)] = construct
     }
 	
-	public func registerLazySingleton<T>(_ interface: T.Type, _ construct: @autoclosure @escaping ()->AnyObject) {
+	public func registerLazySingleton<T>(_ interface: T.Type, _ construct: @autoclosure @escaping ()->T) {
 		registerLazySingleton(interface, construct)
 	}
     
-	public func registerType<T>(_ interface: T.Type, _ construct: @escaping ()->AnyObject) {
+	public func registerType<T>(_ interface: T.Type, _ construct: @escaping ()->T) {
 		typeConstructs[ObjectIdentifier(interface)] = construct
 	}
 	
-	public func registerType<T>(_ interface: T.Type, _ construct: @autoclosure @escaping ()->AnyObject) {
+	public func registerType<T>(_ interface: T.Type, _ construct: @autoclosure @escaping ()->T) {
         registerType(interface, construct)
     }
     

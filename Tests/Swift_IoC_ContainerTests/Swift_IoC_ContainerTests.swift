@@ -115,7 +115,7 @@ final class swift_ioc_containerTests: XCTestCase {
     }
 
     func test_registerType_causes_resolve_to_always_create_a_new_instance() throws {
-        IoC.shared.registerType(PIoCTestProtocol.self, { () -> AnyObject in CounterIoCTestClass() })
+        IoC.shared.registerType(PIoCTestProtocol.self, { () -> PIoCTestProtocol in CounterIoCTestClass() })
 
         let result1 = try IoC.shared.resolve(PIoCTestProtocol.self) as? CounterIoCTestClass
         let result2 = try IoC.shared.resolve(PIoCTestProtocol.self) as? CounterIoCTestClass
@@ -123,36 +123,14 @@ final class swift_ioc_containerTests: XCTestCase {
         XCTAssertNotEqual(result1?.nr, result2?.nr)
     }
 
-    func test_registerSingleton_should_crash_when_registered_object_doesent_confirm_to_protocol() {
-		let expectedError = IoCError.incompatibleTypes(interfaceType: PIoCTestProtocol.self, implementationType: A.self)
-		
-		expectFatalError(expectedMessage: String(describing: expectedError)) {
-			IoC.shared.registerSingleton(PIoCTestProtocol.self, A())
-		}
-    }
-
-    func test_resolve_should_fail_when_registerLazySingleton_is_called_with_incompatible_types() {
-        IoC.shared.registerLazySingleton(PIoCTestProtocol.self, A())
-
-        assertResolveError(PIoCTestProtocol.self)
-    }
-
-    func test_resolve_should_fail_when_registerType_is_called_with_incompatible_types() {
-        IoC.shared.registerType(PIoCTestProtocol.self, A())
-
-        assertResolveError(PIoCTestProtocol.self)
-    }
-
     func test_unregisterAll_removes_registrations() throws {
         IoC.shared.registerType(PIoCTestProtocol.self, IoCTestClass())
         IoC.shared.registerSingleton(PIoCTestProtocol2.self, IoCTestClass2())
-        IoC.shared.registerLazySingleton(PIoCTestProtocol3.self, IoCTestClass())
 
         IoC.shared.unregisterAll()
 
         assertResolveError(PIoCTestProtocol.self)
         assertResolveError(PIoCTestProtocol2.self)
-        assertResolveError(PIoCTestProtocol3.self)
     }
 
     func test_constructType() throws{
@@ -228,9 +206,6 @@ final class swift_ioc_containerTests: XCTestCase {
         ("test_registerLazySingleton_always_returns_the_same_instance", test_registerLazySingleton_always_returns_the_same_instance),
         ("test_registerSingleton_removes_old_lazy_registration", test_registerSingleton_removes_old_lazy_registration),
         ("test_registerType_causes_resolve_to_always_create_a_new_instance", test_registerType_causes_resolve_to_always_create_a_new_instance),
-        ("test_registerSingleton_should_throw_error_when_registered_object_doesent_confirm_to_protocol", test_registerSingleton_should_crash_when_registered_object_doesent_confirm_to_protocol),
-        ("test_resolve_should_fail_when_registerLazySingleton_is_called_with_incompatible_types", test_resolve_should_fail_when_registerLazySingleton_is_called_with_incompatible_types),
-        ("test_resolve_should_fail_when_registerType_is_called_with_incompatible_types", test_resolve_should_fail_when_registerType_is_called_with_incompatible_types),
         ("test_unregisterAll_removes_registrations", test_unregisterAll_removes_registrations),
         ("test_constructType", test_constructType),
     ]
